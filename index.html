@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI Toolbox">
+<link rel="manifest" href="manifest.webmanifest">
+<title>AI Toolbox</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#141f32;--muted:#a8b4c7;--accent:#78a9ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#101b30,#090f1b);color:#f5f7fb;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:calc(20px + env(safe-area-inset-top)) 18px 16px;position:sticky;top:0;background:#101827ee;backdrop-filter:blur(14px);z-index:2}
+h1{font-size:27px;margin:0 0 5px}.sub{color:var(--muted);font-size:14px}
+main{padding:16px 14px 40px;max-width:850px;margin:auto}
+input{width:100%;padding:14px 15px;border-radius:14px;border:1px solid #34445e;background:#0d1728;color:white;font-size:16px;margin:12px 0}
+.filters{display:flex;gap:8px;overflow:auto;padding:2px 0 12px}.filters button,.fav{border:1px solid #35445d;background:#17243a;color:#eaf1ff;border-radius:999px;padding:9px 13px;white-space:nowrap;font-size:14px}
+.filters button.active{background:#315b9d;border-color:#6b9eea}
+.grid{display:grid;grid-template-columns:1fr;gap:11px}.item{background:var(--panel);border:1px solid #293951;border-radius:17px;padding:15px}
+.top{display:flex;align-items:center;gap:10px}.emoji{font-size:27px}.name{font-weight:700;font-size:17px;flex:1}.tag{font-size:11px;color:#b9d2ff;background:#263c5d;padding:5px 8px;border-radius:20px}
+p{color:#c0cada;line-height:1.45;font-size:14px;margin:10px 0}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+a{color:#9fc2ff;text-decoration:none;font-weight:600}.fav{padding:7px 10px;margin-left:auto}
+.note{color:#91a0b7;font-size:12px;line-height:1.45;margin-top:18px}
+@media(min-width:650px){.grid{grid-template-columns:1fr 1fr}header{padding-left:max(18px,calc((100vw - 820px)/2));padding-right:max(18px,calc((100vw - 820px)/2))}}
+</style></head>
+<body>
+<header><h1>✨ AI Toolbox</h1><div class="sub">Strumenti AI gratuiti, open source e self-hosted</div></header>
+<main>
+<input id="search" type="search" placeholder="Cerca uno strumento…" aria-label="Cerca uno strumento">
+<nav class="filters" id="filters"></nav><section class="grid" id="list"></section>
+<div class="note">Nota: “gratuito”, “open source” e “open-weight” non sono la stessa cosa. Alcuni strumenti richiedono un computer potente o costi di hosting/API. Verifica sempre licenza, condizioni e prezzi sul sito ufficiale. I link aprono i siti dei rispettivi progetti.</div>
+</main>
+<script>
+const tools=[
+["Ollama","✍️","Testi","Esegue modelli linguistici in locale sul computer.","Open source","https://ollama.com/"],
+["Jan","🧠","Testi","Assistente AI desktop per usare modelli locali.","Open source","https://jan.ai/"],
+["Open WebUI","💬","Testi","Interfaccia web self-hosted per modelli locali e provider compatibili.","Open source","https://openwebui.com/"],
+["AnythingLLM","📚","Testi","Chat con documenti e basi di conoscenza personali.","Open source","https://anythingllm.com/"],
+["ComfyUI","🎨","Immagini","Workflow visuali per generazione e modifica immagini.","Open source","https://www.comfy.org/"],
+["Fooocus","🖼️","Immagini","Interfaccia semplificata per generazione immagini.","Open source","https://github.com/lllyasviel/Fooocus"],
+["Upscayl","🔍","Immagini","Ingrandimento e miglioramento immagini in locale.","Open source","https://upscayl.org/"],
+["Stable Diffusion","🌄","Immagini","Famiglia di modelli per generazione immagini; licenze variabili.","Open-weight","https://stability.ai/"],
+["Wan","🎬","Video","Modelli open-weight per generazione video.","Open-weight","https://github.com/Wan-Video/Wan2.2"],
+["LTX Video","🎞️","Video","Modelli e strumenti per generazione video.","Open-weight","https://ltx.video/"],
+["Open-Sora","🎥","Video","Progetto open source di ricerca per generazione video.","Open source","https://github.com/hpcaitech/Open-Sora"],
+["Activepieces","⚙️","Automazioni","Automazioni visuali e collegamento tra app.","Open source","https://www.activepieces.com/"],
+["n8n","🔗","Automazioni","Workflow automation; source-available con condizioni di licenza proprie.","Source-available","https://n8n.io/"],
+["Node-RED","🧩","Automazioni","Automazione visuale e integrazione di servizi e dispositivi.","Open source","https://nodered.org/"],
+["Huginn","🤖","Automazioni","Agenti che monitorano eventi e automatizzano attività online.","Open source","https://github.com/huginn/huginn"],
+["Cal.com","📅","Automazioni","Pianificazione appuntamenti e integrazioni calendario.","Open source","https://cal.com/"]
+];
+const cats=["Tutti","Testi","Immagini","Video","Automazioni"];let category="Tutti",favorites=new Set(JSON.parse(localStorage.getItem("ai-favs")||"[]"));
+const filters=document.querySelector("#filters"),list=document.querySelector("#list"),search=document.querySelector("#search");
+function render(){filters.innerHTML=cats.map(c=>`<button class="${c===category?'active':''}" data-cat="${c}">${c}</button>`).join("")+`<button data-cat="Preferiti" class="${category==='Preferiti'?'active':''}">★ Preferiti</button>`;
+filters.querySelectorAll("button").forEach(b=>b.onclick=()=>{category=b.dataset.cat;render()});
+let q=search.value.toLowerCase();let rows=tools.filter(t=>(category==="Tutti"||category==="Preferiti"&&favorites.has(t[0])||t[2]===category)&&(!q||t.join(" ").toLowerCase().includes(q)));
+list.innerHTML=rows.map(t=>`<article class="item"><div class="top"><span class="emoji">${t[1]}</span><span class="name">${t[0]}</span><span class="tag">${t[4]}</span></div><p>${t[3]}</p><div class="actions"><a href="${t[5]}" target="_blank" rel="noopener">Sito ufficiale ↗</a><button class="fav" data-fav="${t[0]}">${favorites.has(t[0])?"★ Salvato":"☆ Preferito"}</button></div></article>`).join("")||"<p>Nessun risultato trovato.</p>";
+list.querySelectorAll("[data-fav]").forEach(b=>b.onclick=()=>{let n=b.dataset.fav;favorites.has(n)?favorites.delete(n):favorites.add(n);localStorage.setItem("ai-favs",JSON.stringify([...favorites]));render()});
+}
+search.addEventListener("input",render);render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script></body></html>
